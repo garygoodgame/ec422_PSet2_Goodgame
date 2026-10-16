@@ -1,0 +1,11 @@
+---
+title: "Problem Set 2"
+author: "Gary Goodgame"
+date: Oct 16 2026
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+## \*\*GitHub repo:\*\* 

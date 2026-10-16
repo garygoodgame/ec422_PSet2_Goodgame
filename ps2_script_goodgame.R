@@ -111,5 +111,20 @@ ggplot(unemp_summary, aes(x = fct_reorder(region, mean_rate), y = mean_rate, fil
        y = "Average Unemployment Rate (%)") +
   theme_minimal()
 
+#This graph shows unemployment rates for each region against the following month's change.
+#I think this is interesting because it shows that when a given month has a relatively high unemployment rate, the following month's rate tends to fall.
+unemp <- unemp |>
+  arrange(region, date) |>
+  group_by(region) |>
+  mutate(next_month_change = lead(unemployment_rate_change)) |>
+  ungroup()
 
-           
+ggplot(unemp, aes(x = unemployment_rate, y = next_month_change, color = region)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "Unemployment Rate vs. Next Month's Change",
+       x = "Unemployment Rate (%)",
+       y = "Change in Following Month (percentage points)") +
+  theme_minimal()
+
+
