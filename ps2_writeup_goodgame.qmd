@@ -8,4 +8,160 @@ format:
     embed-resources: true
 ---
 
-## \*\*GitHub repo:\*\* 
+## \*\*GitHub repo:\*\* <https://github.com/garygoodgame/ec422_PSet2_Goodgame.git>
+
+## Data
+
+This data is sourced from FRED and includes monthly unemployment rates from California, New York, Oregon, Texas, and the United States. The data contains unemployment rates going back 50 years, starting in January of 1976.
+
+```{r}
+library(tidyquant)
+library(tidyverse)
+ 
+
+unemp_raw <- read_rds("data/unemp_raw.rds")
+head(unemp_raw)
+```
+
+## Wrangling
+
+```{r}
+library(knitr)
+
+ dir.create("data", showWarnings = FALSE)
+ 
+ write_rds(unemp_raw, "data/unemp_raw.rds")
+
+unemp_raw = read_rds("data/unemp_raw.rds")
+
+unemp <- unemp_raw |>
+  rename(unemployment_rate = price) |>
+  mutate(
+    region = case_when(
+      symbol == "UNRATE" ~ "United States",
+      symbol == "ORUR"    ~ "Oregon",
+      symbol == "CAUR"    ~ "California",
+      symbol == "TXUR"    ~ "Texas",
+      symbol == "NYUR"    ~ "New York"
+    )
+  )
+
+
+
+
+
+unemp <- unemp |>
+  arrange(region, date) |>
+  group_by(region) |>
+  mutate(
+    unemployment_rate = replace(
+      unemployment_rate,
+      date == as.Date("2025-10-01"),
+      unemployment_rate[date == as.Date("2025-09-01")]
+    )
+  ) |>
+  ungroup()
+
+
+
+unemp <- unemp |>
+  arrange(region,date) |>
+  group_by(region) |>
+  mutate(unemployment_rate_change = unemployment_rate - lag(unemployment_rate)) |>
+  ungroup()
+
+unemp_recent <- unemp |>
+  filter(date >= as.Date("2015-01-01"))
+
+unemp_summary <- unemp |>
+  group_by(region) |>
+  summarize(
+    mean_rate = mean(unemployment_rate, na.rm = TRUE),
+    min_rate  = min(unemployment_rate,  na.rm = TRUE),
+    max_rate  = max(unemployment_rate,  na.rm = TRUE)
+  )
+
+unemp_recent_summary <- unemp_recent |>
+  group_by(region) |>
+  summarize(
+    mean_rate = mean(unemployment_rate, na.rm = TRUE),
+    min_rate  = min(unemployment_rate,  na.rm = TRUE),
+    max_rate  = max(unemployment_rate,  na.rm = TRUE)
+  )
+
+
+
+
+unemp_top_increases <- unemp |>
+  slice_max(unemployment_rate_change, n = 5)
+
+unemp_top_decreases <- unemp |>
+  slice_min(unemployment_rate_change, n = 5)
+
+
+unemp_no_covid <- unemp |>
+  filter(year(date) != 2020)
+
+unemp_top_increases_no_covid <- unemp_no_covid |>
+  slice_max(unemployment_rate_change, n = 5)
+
+unemp_top_decreases_no_covid <- unemp_no_covid |>
+  slice_min(unemployment_rate_change, n = 5)
+
+#This table shows the average minimum, maximum and mean unemployment rates for each region over the entire time span of the data.
+kable(unemp_summary)
+#This table shows the average minimum, maximum and mean unemployment rates for each region simce January 2015.
+kable(unemp_recent_summary)
+#This table shows the five highest month over month increases in unemployment rates excluding the year 2020. THere are more than five rows since our code includes ties.
+kable(unemp_top_increases_no_covid)
+#This table shows the five lowest month over month increases in unemployment rates excluding the year 2020. THere are more than five rows since our code includes ties.
+kable(unemp_top_decreases_no_covid)
+```
+
+## Visualization
+
+```{r}
+#This graph shows unemployment rates over time for each region. 
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +        # or geom_col(), geom_point(), etc.
+  labs(title = "Unemployment Rates by Region", x = "Date", y = "Unemployment Rate") +
+  theme_minimal()
+
+#This graph shows each region's unemployment rate over time with each region in its own separate panel.
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +
+  facet_wrap(~ region) +
+  labs(title = "Monthly Unemployment Rate by Region",
+       x = "Date",
+       y = "Unemployment Rate (%)") +
+  theme_minimal()
+
+#This graph shows the average unemployment rate for each region since 1976. 
+ggplot(unemp_summary, aes(x = fct_reorder(region, mean_rate), y = mean_rate, fill = region)) +
+  geom_col() +
+  labs(title = "Average Unemployment Rate by Region",
+       x = "Region",
+       y = "Average Unemployment Rate (%)") +
+  theme_minimal()
+
+#This graph shows unemployment rates for each region against the following month's change.
+#I think this is interesting because it shows that when a given month has a relatively high unemployment rate, the following month's rate tends to fall.
+unemp <- unemp |>
+  arrange(region, date) |>
+  group_by(region) |>
+  mutate(next_month_change = lead(unemployment_rate_change)) |>
+  ungroup()
+
+ggplot(unemp, aes(x = unemployment_rate, y = next_month_change, color = region)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "Unemployment Rate vs. Next Month's Change",
+       x = "Unemployment Rate (%)",
+       y = "Change in Following Month (percentage points)") +
+  theme_minimal()
+
+```
+
+## Reflection
+
+Working on Problem Set 2 taught me a lot. I felt using R Studio was pretty straightforward, but there were other parts that were hard for me. Using git and github was slightly annoying since it was my first time using it, but I eventually got the hang of it. I also had some trouble with getting data from FRED while rendering which was very frustrating. I now feel a lot more confident in going through the R/Git/Github/Quarto workflow as a whole. I also feel more confident using "dplyr" to clean and wrangle my data. It was cool to see how real economists and programmers use git and github to publish code.

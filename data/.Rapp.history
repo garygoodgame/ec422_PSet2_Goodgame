@@ -1,0 +1,3 @@
+load("/Users/Loyola/Desktop/EC422/ec422_PSet2_Goodgame/data/unemp_raw.rds")
+load("/Users/Loyola/Desktop/EC422/ec422_PSet2_Goodgame/data/unemp_raw copy.rds")
+load("/Users/Loyola/Desktop/EC422/ec422_PSet2_Goodgame/data/unemp_raw.rds")
